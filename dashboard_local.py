@@ -158,44 +158,48 @@ st.caption("Collector Activity Dashboard (Python + Streamlit)")
 # --- 側邊欄 (Sidebar) ---
 with st.sidebar:
     st.header("⚙️ 資料來源設定")
-    st.markdown("請提供 Google Drive 中 `KH_DM_COLL_REPOSN_VISIT.xlsx` 和 `分組名單.xlsx` 的分享連結。")
+    
+    # 使用 st.secrets 儲存連結以方便部署
+    default_visit_url = st.secrets.get("GDRIVE_VISIT_URL")
+    default_group_url = st.secrets.get("GDRIVE_GROUP_URL")
 
-    # 使用 st.secrets 儲存連結以方便部署，如果不存在則使用 text_input
-    default_visit_url = st.secrets.get("GDRIVE_VISIT_URL", "")
-    default_group_url = st.secrets.get("GDRIVE_GROUP_URL", "")
+    # 檢查 Secrets 是否已設定
+    if not default_visit_url or not default_group_url:
+        st.error("🔴 錯誤：找不到 Google Drive 連結！")
+        st.error("請前往您的 Streamlit Cloud 儀表板，點擊右下角 'Manage app' -> 'Settings' -> 'Secrets'，然後貼上您的 TOML 金鑰。")
+        st.code("""
+GDRIVE_VISIT_URL = "您的外訪紀錄檔案分享連結"
+GDRIVE_GROUP_URL = "您的分組名單檔案分享連結"
+        """, language="toml")
+        st.stop()
 
-    visit_log_url = st.text_input(
-        "外訪紀錄 (VISIT) 分享連結", 
-        value=default_visit_url,
-        help="將 Google Drive 檔案權限設定為「知道連結的任何人」"
-    )
-    group_list_url = st.text_input(
-        "分組名單 (GROUP) 分享連結", 
-        value=default_group_url,
-        help="將 Google Drive 檔案權限設定為「知道連結的任何人」"
-    )
+    visit_log_url = default_visit_url
+    group_list_url = default_group_url
+    
+    st.success("✅ 已成功從 Streamlit Secrets 載入連結。")
+    with st.expander("顯示目前使用的連結"):
+        st.info(f"外訪紀錄: {visit_log_url}")
+        st.info(f"分組名單: {group_list_url}")
 
     st.header("篩選條件")
     
-    if visit_log_url and group_list_url:
-        visit_logs, groups_info = load_data_from_gdrive(visit_log_url, group_list_url)
-    else:
-        visit_logs, groups_info = None, None
+    visit_logs, groups_info = load_data_from_gdrive(visit_log_url, group_list_url)
 
-    if visit_logs is not None and groups_info is not None:
-        group_list = ['所有團隊'] + sorted(groups_info['Group'].unique().tolist())
-        selected_group = st.selectbox('選擇團隊 (Group)', group_list)
+    if visit_logs is None or groups_info is None:
+        st.warning("資料載入失敗，請檢查儀表板上方的錯誤訊息。")
+        st.stop()
 
-        if selected_group == '所有團隊':
-            collectors_in_group = ['所有催收員'] + sorted(groups_info['Agent Name'].unique().tolist())
-        else:
-            collector_ids_in_group = groups_info[groups_info['Group'] == selected_group]['ID'].tolist()
-            filtered_collectors = visit_logs[visit_logs['Collector ID'].isin(collector_ids_in_group)]
-            collectors_in_group = ['所有催收員'] + sorted(filtered_collectors['Collector Name'].dropna().unique().tolist())
-            
-        selected_collector_name = st.selectbox('選擇催收員 (Collector)', collectors_in_group)
+    group_list = ['所有團隊'] + sorted(groups_info['Group'].unique().tolist())
+    selected_group = st.selectbox('選擇團隊 (Group)', group_list)
+
+    if selected_group == '所有團隊':
+        collectors_in_group = ['所有催收員'] + sorted(groups_info['Agent Name'].unique().tolist())
     else:
-        st.warning("請在上方提供有效的 Google Drive 分享連結以載入資料。")
+        collector_ids_in_group = groups_info[groups_info['Group'] == selected_group]['ID'].tolist()
+        filtered_collectors = visit_logs[visit_logs['Collector ID'].isin(collector_ids_in_group)]
+        collectors_in_group = ['所有催收員'] + sorted(filtered_collectors['Collector Name'].dropna().unique().tolist())
+        
+    selected_collector_name = st.selectbox('選擇催收員 (Collector)', collectors_in_group)
 
 # --- 主面板 (Main Panel) ---
 if visit_logs is not None and groups_info is not None:
