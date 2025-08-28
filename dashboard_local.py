@@ -85,7 +85,8 @@ def load_data_from_gdrive(visit_url, group_url):
         return visit_logs_df, groups_df
 
     except Exception as e:
-        st.error(f"讀取 Google Drive 檔案時發生錯誤，請檢查連結權限或檔案格式。錯誤訊息：{e}")
+        st.error(f"讀取 Google Drive 檔案時發生錯誤，請檢查連結權限或檔案格式。")
+        st.error(f"詳細錯誤訊息：{e}")
         return None, None
 
 def get_aging_colors(aging_status):
@@ -429,7 +430,7 @@ if visit_logs is not None and groups_info is not None:
 
 else:
     st.markdown("---")
-    st.image("https://i.imgur.com/gYv6EAU.png", caption="儀表板預覽 (Dashboard Preview)", use_column_width=True)
+    st.image("https://i.imgur.com/gYv6EAU.png", caption="儀表板預覽 (Dashboard Preview)", use_container_width=True)
     st.markdown("### 儀表板已設定為讀取本地端檔案路徑")
     st.markdown("如果看到此畫面，表示程式無法找到或讀取指定的 Excel 檔案，請確認：")
     st.markdown("1.  檔案確實存在於腳本中設定的路徑。")
