@@ -15,9 +15,14 @@ st.set_page_config(
 
 def get_gdrive_download_url(share_link):
     """將 Google Drive 分享連結轉換為直接下載連結"""
-    if 'file/d/' in share_link:
+    file_id = None
+    if 'spreadsheets/d/' in share_link:
+        file_id = share_link.split('/d/')[1].split('/')[0]
+        return f'https://docs.google.com/spreadsheets/d/{file_id}/export?format=xlsx'
+    elif 'file/d/' in share_link:
         file_id = share_link.split('/d/')[1].split('/')[0]
         return f'https://drive.google.com/uc?export=download&id={file_id}'
+    
     st.warning(f"提供的連結格式不正確，請確認是有效的 Google Drive 檔案分享連結: {share_link}")
     return None
 
